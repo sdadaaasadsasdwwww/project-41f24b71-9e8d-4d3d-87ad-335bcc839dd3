@@ -1,10 +1,11 @@
 import { Heart } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import ProductCard from '@/components/ProductCard';
-import { products } from '@/data/products';
+import { useStore } from '@/contexts/StoreContext';
 import { useFavorites } from '@/contexts/FavoritesContext';
 
 export default function FavoritesPage() {
+  const { products } = useStore();
   const { favorites } = useFavorites();
   const favoriteProducts = products.filter(p => favorites.includes(p.id));
 

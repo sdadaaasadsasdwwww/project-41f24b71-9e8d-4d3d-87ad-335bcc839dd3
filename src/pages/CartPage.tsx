@@ -1,12 +1,18 @@
 import { Link } from 'react-router-dom';
-import { Minus, Plus, ArrowLeft, ShoppingBag } from 'lucide-react';
+import { Minus, Plus, Trash2, ArrowLeft, ShoppingBag } from 'lucide-react';
 import { useCart } from '@/contexts/CartContext';
+import { useStore } from '@/contexts/StoreContext';
 import { useState } from 'react';
 import { toast } from 'sonner';
 
 export default function CartPage() {
-  const { items, updateQuantity, clearCart, totalPrice } = useCart();
+  const { items, updateQuantity, removeFromCart, clearCart, totalPrice } = useCart();
+  const { addOrder } = useStore();
   const [showCheckout, setShowCheckout] = useState(false);
+  const [name, setName] = useState('');
+  const [phone, setPhone] = useState('');
+  const [address, setAddress] = useState('');
+  const [comment, setComment] = useState('');
 
   if (items.length === 0) {
     return (
@@ -21,8 +27,21 @@ export default function CartPage() {
     );
   }
 
+  const deliveryCost = totalPrice >= 1000 ? 0 : 150;
+
   const handleCheckout = (e: React.FormEvent) => {
     e.preventDefault();
+    addOrder({
+      id: crypto.randomUUID(),
+      customerName: name,
+      phone,
+      address,
+      comment,
+      items: items.map(i => ({ product: i.product, quantity: i.quantity })),
+      total: totalPrice + deliveryCost,
+      status: 'Новий',
+      date: new Date().toLocaleDateString('uk-UA'),
+    });
     toast.success('Замовлення оформлено! Ми зв\'яжемося з вами найближчим часом.');
     clearCart();
     setShowCheckout(false);
@@ -52,6 +71,9 @@ export default function CartPage() {
                     <span className="px-3 text-sm">{quantity}</span>
                     <button onClick={() => updateQuantity(product.id, quantity + 1)} className="p-1.5 hover:bg-accent"><Plus className="h-3 w-3" /></button>
                   </div>
+                  <button onClick={() => removeFromCart(product.id)} className="p-1.5 text-muted-foreground hover:text-destructive transition-colors">
+                    <Trash2 className="h-4 w-4" />
+                  </button>
                 </div>
               </div>
               <p className="font-bold text-foreground whitespace-nowrap">{product.price * quantity} ₴</p>
@@ -63,12 +85,11 @@ export default function CartPage() {
           <h3 className="heading-card mb-4">Підсумок</h3>
           <div className="space-y-2 text-sm mb-4">
             <div className="flex justify-between"><span className="text-muted-foreground">Товари</span><span>{totalPrice} ₴</span></div>
-            <div className="flex justify-between"><span className="text-muted-foreground">Доставка</span><span>{totalPrice >= 1000 ? 'Безкоштовно' : '150 ₴'}</span></div>
+            <div className="flex justify-between"><span className="text-muted-foreground">Доставка</span><span>{deliveryCost === 0 ? 'Безкоштовно' : `${deliveryCost} ₴`}</span></div>
           </div>
           <div className="border-t border-border pt-3 mb-6">
             <div className="flex justify-between font-bold text-lg">
-              <span>Разом</span>
-              <span>{totalPrice + (totalPrice >= 1000 ? 0 : 150)} ₴</span>
+              <span>Разом</span><span>{totalPrice + deliveryCost} ₴</span>
             </div>
           </div>
 
@@ -78,10 +99,10 @@ export default function CartPage() {
             </button>
           ) : (
             <form onSubmit={handleCheckout} className="space-y-3">
-              <input required placeholder="Ваше ім'я" className="w-full border border-border rounded-lg px-4 py-2 text-sm bg-background" />
-              <input required placeholder="Телефон" type="tel" className="w-full border border-border rounded-lg px-4 py-2 text-sm bg-background" />
-              <input required placeholder="Адреса доставки" className="w-full border border-border rounded-lg px-4 py-2 text-sm bg-background" />
-              <textarea placeholder="Коментар до замовлення" className="w-full border border-border rounded-lg px-4 py-2 text-sm bg-background" rows={2} />
+              <input required value={name} onChange={e => setName(e.target.value)} placeholder="Ваше ім'я" className="w-full border border-border rounded-lg px-4 py-2 text-sm bg-background" />
+              <input required value={phone} onChange={e => setPhone(e.target.value)} placeholder="Телефон" type="tel" className="w-full border border-border rounded-lg px-4 py-2 text-sm bg-background" />
+              <input required value={address} onChange={e => setAddress(e.target.value)} placeholder="Адреса доставки" className="w-full border border-border rounded-lg px-4 py-2 text-sm bg-background" />
+              <textarea value={comment} onChange={e => setComment(e.target.value)} placeholder="Коментар до замовлення" className="w-full border border-border rounded-lg px-4 py-2 text-sm bg-background" rows={2} />
               <button type="submit" className="w-full bg-primary text-primary-foreground py-3 rounded-lg font-medium hover:bg-primary/90 transition-colors">
                 Підтвердити замовлення
               </button>

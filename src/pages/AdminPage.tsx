@@ -1,15 +1,21 @@
 import { useState } from 'react';
-import { Settings, BarChart3, ShoppingBag, ArrowLeft } from 'lucide-react';
+import { Settings, MessageSquare, Package, BarChart3, ShoppingBag, ArrowLeft, Plus, Trash2, Pencil, Check, X, Send, Users, Image } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import { useStore } from '@/contexts/StoreContext';
+import type { Product } from '@/data/products';
+import { toast } from 'sonner';
 
 const tabs = [
+  { id: 'orders', label: 'Замовлення', icon: Package },
   { id: 'products', label: 'Товари', icon: ShoppingBag },
-  { id: 'stats', label: 'Статистика', icon: BarChart3 },
+  { id: 'categories', label: 'Категорії', icon: BarChart3 },
+  { id: 'chats', label: 'Чати', icon: MessageSquare },
   { id: 'settings', label: 'Налаштування', icon: Settings },
 ];
 
 export default function AdminPage() {
-  const [activeTab, setActiveTab] = useState('products');
+  const [activeTab, setActiveTab] = useState('orders');
+  const store = useStore();
 
   return (
     <div className="container mx-auto px-4 py-10">
@@ -34,61 +40,356 @@ export default function AdminPage() {
         </div>
 
         <div className="lg:col-span-3 bg-card border border-border/50 rounded-xl p-6">
-          {activeTab === 'products' && (
-            <div>
-              <h2 className="heading-section mb-4">Управління товарами</h2>
-              <p className="text-body">Тут ви зможете додавати та редагувати товари з каталогу.</p>
-              <button className="mt-4 bg-primary text-primary-foreground px-6 py-2 rounded-lg text-sm font-medium hover:bg-primary/90 transition-colors">
-                + Додати товар
-              </button>
-            </div>
-          )}
+          {activeTab === 'orders' && <OrdersTab />}
+          {activeTab === 'products' && <ProductsTab />}
+          {activeTab === 'categories' && <CategoriesTab />}
+          {activeTab === 'chats' && <ChatsTab />}
+          {activeTab === 'settings' && <SettingsTab />}
+        </div>
+      </div>
+    </div>
+  );
+}
 
-          {activeTab === 'stats' && (
-            <div>
-              <h2 className="heading-section mb-6">Статистика</h2>
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                {[
-                  { label: 'Замовлення сьогодні', value: '0' },
-                  { label: 'Дохід сьогодні', value: '0 ₴' },
-                  { label: 'Нових клієнтів', value: '0' },
-                ].map((s, i) => (
-                  <div key={i} className="p-4 border border-border/50 rounded-lg">
-                    <p className="text-xs text-muted-foreground">{s.label}</p>
-                    <p className="text-2xl font-bold mt-1">{s.value}</p>
-                  </div>
+function OrdersTab() {
+  const { orders, updateOrderStatus } = useStore();
+  const statuses = ['Новий', 'В обробці', 'В дорозі', 'Доставлено', 'Скасовано'];
+
+  return (
+    <div>
+      <h2 className="heading-section mb-4">Замовлення</h2>
+      {orders.length === 0 ? (
+        <p className="text-muted-foreground">Поки немає замовлень</p>
+      ) : (
+        <div className="space-y-3">
+          {orders.map(o => (
+            <div key={o.id} className="p-4 border border-border/50 rounded-lg">
+              <div className="flex items-start justify-between mb-2">
+                <div>
+                  <p className="font-semibold text-sm">#{o.id.slice(0, 8)} — {o.customerName}</p>
+                  <p className="text-xs text-muted-foreground">{o.date} · {o.phone}</p>
+                  <p className="text-xs text-muted-foreground">{o.address}</p>
+                  {o.comment && <p className="text-xs text-muted-foreground italic mt-1">"{o.comment}"</p>}
+                </div>
+                <div className="text-right">
+                  <select
+                    value={o.status}
+                    onChange={e => { updateOrderStatus(o.id, e.target.value); toast('Статус оновлено'); }}
+                    className="text-xs px-2 py-1 rounded border border-border bg-background"
+                  >
+                    {statuses.map(s => <option key={s} value={s}>{s}</option>)}
+                  </select>
+                  <p className="font-bold text-sm mt-1">{o.total} ₴</p>
+                </div>
+              </div>
+              <div className="text-xs text-muted-foreground">
+                {o.items.map((item, i) => (
+                  <span key={i}>{item.product.name} ×{item.quantity}{i < o.items.length - 1 ? ', ' : ''}</span>
                 ))}
               </div>
             </div>
-          )}
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
 
-          {activeTab === 'settings' && (
+function ProductsTab() {
+  const { products, addProduct, deleteProduct, categories } = useStore();
+  const [showForm, setShowForm] = useState(false);
+  const [name, setName] = useState('');
+  const [price, setPrice] = useState('');
+  const [oldPrice, setOldPrice] = useState('');
+  const [category, setCategory] = useState(categories[0]?.id || '');
+  const [description, setDescription] = useState('');
+  const [imageUrl, setImageUrl] = useState('');
+  const [imagePreview, setImagePreview] = useState('');
+
+  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      const result = reader.result as string;
+      setImageUrl(result);
+      setImagePreview(result);
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!name || !price || !imageUrl) {
+      toast.error('Заповніть обов\'язкові поля');
+      return;
+    }
+    const product: Product = {
+      id: crypto.randomUUID(),
+      name,
+      price: Number(price),
+      oldPrice: oldPrice ? Number(oldPrice) : undefined,
+      image: imageUrl,
+      category,
+      description,
+      rating: 0,
+      reviewCount: 0,
+    };
+    addProduct(product);
+    toast.success('Товар додано!');
+    setName(''); setPrice(''); setOldPrice(''); setDescription(''); setImageUrl(''); setImagePreview('');
+    setShowForm(false);
+  };
+
+  return (
+    <div>
+      <div className="flex items-center justify-between mb-4">
+        <h2 className="heading-section">Товари ({products.length})</h2>
+        <button onClick={() => setShowForm(!showForm)} className="inline-flex items-center gap-2 bg-primary text-primary-foreground px-4 py-2 rounded-lg text-sm font-medium hover:bg-primary/90 transition-colors">
+          <Plus className="h-4 w-4" /> Додати товар
+        </button>
+      </div>
+
+      {showForm && (
+        <form onSubmit={handleSubmit} className="mb-6 p-4 border border-border/50 rounded-lg space-y-3 bg-background">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
-              <h2 className="heading-section mb-4">Налаштування сайту</h2>
-              <div className="space-y-4 max-w-md">
-                <div>
-                  <label className="text-sm font-medium block mb-1">Назва магазину</label>
-                  <input defaultValue="Квітковий Рай" className="w-full border border-border rounded-lg px-4 py-2 text-sm bg-background" />
-                </div>
-                <div>
-                  <label className="text-sm font-medium block mb-1">Телефон</label>
-                  <input defaultValue="+380 (50) 123-45-67" className="w-full border border-border rounded-lg px-4 py-2 text-sm bg-background" />
-                </div>
-                <div>
-                  <label className="text-sm font-medium block mb-1">Email</label>
-                  <input defaultValue="info@kvitkovyrai.ua" className="w-full border border-border rounded-lg px-4 py-2 text-sm bg-background" />
-                </div>
-                <div>
-                  <label className="text-sm font-medium block mb-1">Адреса</label>
-                  <input defaultValue="м. Київ, вул. Хрещатик, 1" className="w-full border border-border rounded-lg px-4 py-2 text-sm bg-background" />
-                </div>
-                <button className="bg-primary text-primary-foreground px-6 py-2 rounded-lg text-sm font-medium hover:bg-primary/90 transition-colors">
-                  Зберегти зміни
+              <label className="text-xs font-medium block mb-1">Назва *</label>
+              <input value={name} onChange={e => setName(e.target.value)} className="w-full border border-border rounded-lg px-3 py-2 text-sm bg-card" placeholder="Назва товару" />
+            </div>
+            <div>
+              <label className="text-xs font-medium block mb-1">Категорія</label>
+              <select value={category} onChange={e => setCategory(e.target.value)} className="w-full border border-border rounded-lg px-3 py-2 text-sm bg-card">
+                {categories.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+              </select>
+            </div>
+            <div>
+              <label className="text-xs font-medium block mb-1">Ціна (₴) *</label>
+              <input type="number" value={price} onChange={e => setPrice(e.target.value)} className="w-full border border-border rounded-lg px-3 py-2 text-sm bg-card" placeholder="0" />
+            </div>
+            <div>
+              <label className="text-xs font-medium block mb-1">Стара ціна (₴)</label>
+              <input type="number" value={oldPrice} onChange={e => setOldPrice(e.target.value)} className="w-full border border-border rounded-lg px-3 py-2 text-sm bg-card" placeholder="Необов'язково" />
+            </div>
+          </div>
+          <div>
+            <label className="text-xs font-medium block mb-1">Опис</label>
+            <textarea value={description} onChange={e => setDescription(e.target.value)} className="w-full border border-border rounded-lg px-3 py-2 text-sm bg-card" rows={2} placeholder="Опис товару" />
+          </div>
+          <div>
+            <label className="text-xs font-medium block mb-1">Фото *</label>
+            <div className="flex items-center gap-3">
+              <label className="inline-flex items-center gap-2 px-4 py-2 border border-border rounded-lg text-sm cursor-pointer hover:bg-accent transition-colors">
+                <Image className="h-4 w-4" /> Завантажити фото
+                <input type="file" accept="image/*" onChange={handleImageUpload} className="hidden" />
+              </label>
+              <span className="text-xs text-muted-foreground">або</span>
+              <input
+                value={imagePreview ? '' : imageUrl}
+                onChange={e => { setImageUrl(e.target.value); setImagePreview(''); }}
+                className="flex-1 border border-border rounded-lg px-3 py-2 text-sm bg-card"
+                placeholder="URL зображення"
+                disabled={!!imagePreview}
+              />
+            </div>
+            {imagePreview && (
+              <div className="mt-2 relative inline-block">
+                <img src={imagePreview} alt="Preview" className="w-20 h-20 rounded-lg object-cover" />
+                <button type="button" onClick={() => { setImageUrl(''); setImagePreview(''); }} className="absolute -top-1 -right-1 w-5 h-5 bg-destructive text-destructive-foreground rounded-full flex items-center justify-center">
+                  <X className="h-3 w-3" />
                 </button>
               </div>
+            )}
+          </div>
+          <div className="flex gap-2">
+            <button type="submit" className="bg-primary text-primary-foreground px-6 py-2 rounded-lg text-sm font-medium hover:bg-primary/90 transition-colors">Зберегти</button>
+            <button type="button" onClick={() => setShowForm(false)} className="px-6 py-2 border border-border rounded-lg text-sm hover:bg-accent transition-colors">Скасувати</button>
+          </div>
+        </form>
+      )}
+
+      {products.length === 0 ? (
+        <p className="text-muted-foreground">Поки немає товарів. Додайте перший!</p>
+      ) : (
+        <div className="space-y-2">
+          {products.map(p => (
+            <div key={p.id} className="flex items-center gap-3 p-3 border border-border/50 rounded-lg">
+              <img src={p.image} alt={p.name} className="w-12 h-12 rounded-lg object-cover" />
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-medium truncate">{p.name}</p>
+                <p className="text-xs text-muted-foreground">{p.price} ₴</p>
+              </div>
+              <button onClick={() => { deleteProduct(p.id); toast('Товар видалено'); }} className="p-2 text-muted-foreground hover:text-destructive transition-colors">
+                <Trash2 className="h-4 w-4" />
+              </button>
             </div>
-          )}
+          ))}
         </div>
+      )}
+    </div>
+  );
+}
+
+function CategoriesTab() {
+  const { categories, updateCategory } = useStore();
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editValue, setEditValue] = useState('');
+
+  const startEdit = (id: string, name: string) => {
+    setEditingId(id);
+    setEditValue(name);
+  };
+
+  const saveEdit = () => {
+    if (editingId && editValue.trim()) {
+      updateCategory(editingId, editValue.trim());
+      toast.success('Категорію оновлено');
+    }
+    setEditingId(null);
+  };
+
+  return (
+    <div>
+      <h2 className="heading-section mb-4">Категорії</h2>
+      <div className="space-y-2">
+        {categories.map(c => (
+          <div key={c.id} className="flex items-center gap-3 p-3 border border-border/50 rounded-lg">
+            <span className="text-xl">{c.icon}</span>
+            {editingId === c.id ? (
+              <>
+                <input value={editValue} onChange={e => setEditValue(e.target.value)} className="flex-1 border border-border rounded-lg px-3 py-1.5 text-sm bg-background" autoFocus onKeyDown={e => e.key === 'Enter' && saveEdit()} />
+                <button onClick={saveEdit} className="p-1.5 text-secondary hover:bg-accent rounded"><Check className="h-4 w-4" /></button>
+                <button onClick={() => setEditingId(null)} className="p-1.5 text-muted-foreground hover:bg-accent rounded"><X className="h-4 w-4" /></button>
+              </>
+            ) : (
+              <>
+                <span className="flex-1 text-sm font-medium">{c.name}</span>
+                <button onClick={() => startEdit(c.id, c.name)} className="p-1.5 text-muted-foreground hover:text-primary hover:bg-accent rounded transition-colors">
+                  <Pencil className="h-4 w-4" />
+                </button>
+              </>
+            )}
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function ChatsTab() {
+  const { chats, addChat, addMessageToChat } = useStore();
+  const [activeChatId, setActiveChatId] = useState<string | null>(null);
+  const [newMsg, setNewMsg] = useState('');
+
+  const activeChat = chats.find(c => c.id === activeChatId);
+
+  const handleSend = () => {
+    if (!newMsg.trim() || !activeChatId) return;
+    addMessageToChat(activeChatId, {
+      id: crypto.randomUUID(),
+      sender: 'admin',
+      text: newMsg.trim(),
+      time: new Date().toLocaleTimeString('uk-UA', { hour: '2-digit', minute: '2-digit' }),
+    });
+    setNewMsg('');
+  };
+
+  return (
+    <div>
+      <h2 className="heading-section mb-4">Чати з клієнтами</h2>
+      {chats.length === 0 ? (
+        <p className="text-muted-foreground">Поки немає чатів. Чати з'являться коли клієнти напишуть вам.</p>
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 min-h-[300px]">
+          <div className="space-y-2 border-r border-border pr-4">
+            {chats.map(chat => (
+              <button
+                key={chat.id}
+                onClick={() => setActiveChatId(chat.id)}
+                className={`w-full flex items-center gap-3 p-3 rounded-lg text-left transition-colors ${activeChatId === chat.id ? 'bg-accent' : 'hover:bg-accent/50'}`}
+              >
+                <div className="w-8 h-8 rounded-full bg-muted flex items-center justify-center">
+                  <Users className="h-4 w-4 text-muted-foreground" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-medium">{chat.clientName}</p>
+                  <p className="text-xs text-muted-foreground truncate">
+                    {chat.messages[chat.messages.length - 1]?.text || 'Немає повідомлень'}
+                  </p>
+                </div>
+                {chat.unread && <span className="w-2 h-2 rounded-full bg-primary shrink-0" />}
+              </button>
+            ))}
+          </div>
+
+          <div className="md:col-span-2 flex flex-col">
+            {activeChat ? (
+              <>
+                <div className="flex-1 overflow-y-auto space-y-2 mb-3 max-h-[250px]">
+                  {activeChat.messages.map(msg => (
+                    <div key={msg.id} className={`flex ${msg.sender === 'admin' ? 'justify-end' : 'justify-start'}`}>
+                      <div className={`max-w-[75%] px-3 py-2 rounded-lg text-sm ${msg.sender === 'admin' ? 'bg-primary text-primary-foreground' : 'bg-muted'}`}>
+                        <p>{msg.text}</p>
+                        <p className={`text-xs mt-1 ${msg.sender === 'admin' ? 'text-primary-foreground/60' : 'text-muted-foreground'}`}>{msg.time}</p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+                <div className="flex gap-2">
+                  <input
+                    value={newMsg}
+                    onChange={e => setNewMsg(e.target.value)}
+                    onKeyDown={e => e.key === 'Enter' && handleSend()}
+                    placeholder="Ваше повідомлення..."
+                    className="flex-1 border border-border rounded-lg px-3 py-2 text-sm bg-background"
+                  />
+                  <button onClick={handleSend} className="p-2 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-colors">
+                    <Send className="h-4 w-4" />
+                  </button>
+                </div>
+              </>
+            ) : (
+              <p className="text-muted-foreground text-sm text-center py-10">Оберіть чат зліва</p>
+            )}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function SettingsTab() {
+  const { settings, updateSettings } = useStore();
+  const [form, setForm] = useState(settings);
+
+  const handleSave = () => {
+    updateSettings(form);
+    toast.success('Налаштування збережено!');
+  };
+
+  return (
+    <div>
+      <h2 className="heading-section mb-4">Налаштування сайту</h2>
+      <div className="space-y-4 max-w-md">
+        <div>
+          <label className="text-sm font-medium block mb-1">Назва магазину</label>
+          <input value={form.shopName} onChange={e => setForm({ ...form, shopName: e.target.value })} className="w-full border border-border rounded-lg px-4 py-2 text-sm bg-background" />
+        </div>
+        <div>
+          <label className="text-sm font-medium block mb-1">Телефон</label>
+          <input value={form.phone} onChange={e => setForm({ ...form, phone: e.target.value })} className="w-full border border-border rounded-lg px-4 py-2 text-sm bg-background" />
+        </div>
+        <div>
+          <label className="text-sm font-medium block mb-1">Email</label>
+          <input value={form.email} onChange={e => setForm({ ...form, email: e.target.value })} className="w-full border border-border rounded-lg px-4 py-2 text-sm bg-background" />
+        </div>
+        <div>
+          <label className="text-sm font-medium block mb-1">Адреса</label>
+          <input value={form.address} onChange={e => setForm({ ...form, address: e.target.value })} className="w-full border border-border rounded-lg px-4 py-2 text-sm bg-background" />
+        </div>
+        <button onClick={handleSave} className="bg-primary text-primary-foreground px-6 py-2 rounded-lg text-sm font-medium hover:bg-primary/90 transition-colors">
+          Зберегти зміни
+        </button>
       </div>
     </div>
   );

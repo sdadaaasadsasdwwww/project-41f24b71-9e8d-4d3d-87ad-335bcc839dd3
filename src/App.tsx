@@ -4,6 +4,7 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { CartProvider } from "@/contexts/CartContext";
 import { FavoritesProvider } from "@/contexts/FavoritesContext";
+import { StoreProvider } from "@/contexts/StoreContext";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import Index from "./pages/Index";
@@ -21,30 +22,32 @@ const queryClient = new QueryClient();
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <TooltipProvider>
-      <CartProvider>
-        <FavoritesProvider>
-          <Sonner />
-          <BrowserRouter>
-            <div className="min-h-screen flex flex-col">
-              <Header />
-              <main className="flex-1">
-                <Routes>
-                  <Route path="/" element={<Index />} />
-                  <Route path="/catalog" element={<Catalog />} />
-                  <Route path="/product/:id" element={<ProductDetail />} />
-                  <Route path="/cart" element={<CartPage />} />
-                  <Route path="/favorites" element={<FavoritesPage />} />
-                  <Route path="/profile" element={<ProfilePage />} />
-                  <Route path="/admin" element={<AdminPage />} />
-                  <Route path="/about" element={<AboutPage />} />
-                  <Route path="*" element={<NotFound />} />
-                </Routes>
-              </main>
-              <Footer />
-            </div>
-          </BrowserRouter>
-        </FavoritesProvider>
-      </CartProvider>
+      <StoreProvider>
+        <CartProvider>
+          <FavoritesProvider>
+            <Sonner />
+            <BrowserRouter>
+              <div className="min-h-screen flex flex-col">
+                <Header />
+                <main className="flex-1">
+                  <Routes>
+                    <Route path="/" element={<Index />} />
+                    <Route path="/catalog" element={<Catalog />} />
+                    <Route path="/product/:id" element={<ProductDetail />} />
+                    <Route path="/cart" element={<CartPage />} />
+                    <Route path="/favorites" element={<FavoritesPage />} />
+                    <Route path="/profile" element={<ProfilePage />} />
+                    <Route path="/admin" element={<AdminPage />} />
+                    <Route path="/about" element={<AboutPage />} />
+                    <Route path="*" element={<NotFound />} />
+                  </Routes>
+                </main>
+                <Footer />
+              </div>
+            </BrowserRouter>
+          </FavoritesProvider>
+        </CartProvider>
+      </StoreProvider>
     </TooltipProvider>
   </QueryClientProvider>
 );

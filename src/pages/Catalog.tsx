@@ -2,9 +2,10 @@ import { useState, useRef, useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { Search, X } from 'lucide-react';
 import ProductCard from '@/components/ProductCard';
-import { products, categories } from '@/data/products';
+import { useStore } from '@/contexts/StoreContext';
 
 export default function Catalog() {
+  const { products, categories } = useStore();
   const [searchParams, setSearchParams] = useSearchParams();
   const activeCategory = searchParams.get('category') || 'all';
   const [sortBy, setSortBy] = useState('popular');
@@ -41,7 +42,6 @@ export default function Catalog() {
       <h1 className="heading-display mb-2">Каталог</h1>
       <p className="text-body mb-8">Оберіть ідеальний букет для будь-якої нагоди</p>
 
-      {/* Search */}
       <div ref={wrapperRef} className="relative mb-6 max-w-md">
         <div className="relative">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />

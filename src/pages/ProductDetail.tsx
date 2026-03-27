@@ -1,14 +1,16 @@
 import { useParams, Link } from 'react-router-dom';
 import { Star, Heart, ShoppingBag, ArrowLeft, Minus, Plus } from 'lucide-react';
 import { useState } from 'react';
-import { products, reviews } from '@/data/products';
+import { reviews } from '@/data/products';
 import { useCart } from '@/contexts/CartContext';
 import { useFavorites } from '@/contexts/FavoritesContext';
+import { useStore } from '@/contexts/StoreContext';
 import { toast } from 'sonner';
 import ProductCard from '@/components/ProductCard';
 
 export default function ProductDetail() {
   const { id } = useParams();
+  const { products } = useStore();
   const product = products.find(p => p.id === id);
   const { addToCart } = useCart();
   const { toggleFavorite, isFavorite } = useFavorites();
@@ -67,28 +69,19 @@ export default function ProductDetail() {
           </div>
 
           <div className="flex gap-3">
-            <button
-              onClick={handleAddToCart}
-              className="flex-1 inline-flex items-center justify-center gap-2 bg-primary text-primary-foreground px-6 py-3 rounded-lg font-medium hover:bg-primary/90 transition-colors"
-            >
+            <button onClick={handleAddToCart} className="flex-1 inline-flex items-center justify-center gap-2 bg-primary text-primary-foreground px-6 py-3 rounded-lg font-medium hover:bg-primary/90 transition-colors">
               <ShoppingBag className="h-5 w-5" /> Додати до кошика
             </button>
-            <button
-              onClick={() => { toggleFavorite(product.id); toast(fav ? 'Видалено з обраного' : 'Додано до обраного'); }}
-              className="p-3 border border-border rounded-lg hover:bg-accent transition-colors"
-            >
+            <button onClick={() => { toggleFavorite(product.id); toast(fav ? 'Видалено з обраного' : 'Додано до обраного'); }} className="p-3 border border-border rounded-lg hover:bg-accent transition-colors">
               <Heart className={`h-5 w-5 ${fav ? 'fill-primary text-primary' : ''}`} />
             </button>
           </div>
         </div>
       </div>
 
-      {/* Reviews */}
-      <section className="mb-16">
-        <h2 className="heading-section mb-6">Відгуки ({productReviews.length})</h2>
-        {productReviews.length === 0 ? (
-          <p className="text-muted-foreground">Поки немає відгуків. Будьте першим!</p>
-        ) : (
+      {productReviews.length > 0 && (
+        <section className="mb-16">
+          <h2 className="heading-section mb-6">Відгуки ({productReviews.length})</h2>
           <div className="space-y-4">
             {productReviews.map(r => (
               <div key={r.id} className="bg-card border border-border/50 rounded-xl p-5">
@@ -105,10 +98,9 @@ export default function ProductDetail() {
               </div>
             ))}
           </div>
-        )}
-      </section>
+        </section>
+      )}
 
-      {/* Related */}
       {related.length > 0 && (
         <section>
           <h2 className="heading-section mb-6">Схожі товари</h2>
