@@ -4,7 +4,7 @@ import { Flower2, Phone, Mail, MapPin } from 'lucide-react';
 export default function Footer() {
   return (
     <footer className="bg-foreground text-background/80 mt-20">
-      <div className="container mx-auto px-4 py-12 grid grid-cols-1 md:grid-cols-4 gap-8">
+      <div className="container mx-auto px-4 py-12 grid grid-cols-1 md:grid-cols-3 gap-8">
         <div>
           <div className="flex items-center gap-2 mb-4">
             <Flower2 className="h-6 w-6 text-primary" />
@@ -30,16 +30,7 @@ export default function Footer() {
           <div className="space-y-2 text-sm">
             <div className="flex items-center gap-2"><Phone className="h-4 w-4" /> +380 (50) 123-45-67</div>
             <div className="flex items-center gap-2"><Mail className="h-4 w-4" /> info@kvitkovyrai.ua</div>
-            <div className="flex items-center gap-2"><MapPin className="h-4 w-4" /> м. Київ, вул. Хрещатик, 1</div>
-          </div>
-        </div>
-
-        <div>
-          <h4 className="font-serif text-lg font-medium text-background mb-4">Графік роботи</h4>
-          <div className="space-y-1 text-sm">
-            <p>Пн–Пт: 08:00 – 21:00</p>
-            <p>Сб–Нд: 09:00 – 20:00</p>
-            <p className="text-primary mt-2">Доставка щоденно!</p>
+            <div className="flex items-center gap-2"><MapPin className="h-4 w-4" /> Later..</div>
           </div>
         </div>
       </div>
