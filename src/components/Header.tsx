@@ -23,7 +23,7 @@ export default function Header() {
       <div className="container mx-auto px-4 h-16 flex items-center justify-between">
         <Link to="/" className="flex items-center gap-2">
           <Flower2 className="h-7 w-7 text-primary" />
-          <span className="font-serif text-2xl font-semibold text-foreground">Квітковий Рай</span>
+          <span className="font-serif text-2xl font-semibold text-foreground">Квіткові Феї</span>
         </Link>
 
         <nav className="hidden md:flex items-center gap-8">
