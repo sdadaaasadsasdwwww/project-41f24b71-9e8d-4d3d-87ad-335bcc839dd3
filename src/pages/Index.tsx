@@ -1,16 +1,17 @@
 import { Link } from 'react-router-dom';
-import { ArrowRight, Truck, Shield, Clock } from 'lucide-react';
+import { ArrowRight, Heart, Gift, Sparkles } from 'lucide-react';
 import heroImage from '@/assets/hero-flowers.jpg';
 import ProductCard from '@/components/ProductCard';
-import { products, categories } from '@/data/products';
+import { useStore } from '@/contexts/StoreContext';
 
 const features = [
-  { icon: Truck, title: 'Безкоштовна доставка', desc: 'При замовленні від 1000 ₴' },
-  { icon: Shield, title: 'Гарантія свіжості', desc: 'Квіти простоять 7+ днів' },
-  { icon: Clock, title: 'Швидка доставка', desc: 'Протягом 2 годин по Києву' },
+  { icon: Heart, title: 'Створено з любов\'ю', desc: 'Кожен букет — унікальний витвір мистецтва' },
+  { icon: Gift, title: 'Ідеальний подарунок', desc: 'Для будь-якої нагоди та настрою' },
+  { icon: Sparkles, title: 'Завжди свіжі', desc: 'Працюємо лише з найкращими квітами' },
 ];
 
 export default function Index() {
+  const { products, categories } = useStore();
   const featured = products.slice(0, 4);
 
   return (
@@ -74,19 +75,21 @@ export default function Index() {
       </section>
 
       {/* Featured products */}
-      <section className="container mx-auto px-4 pb-20">
-        <div className="flex items-center justify-between mb-10">
-          <h2 className="heading-section">Популярні товари</h2>
-          <Link to="/catalog" className="text-sm font-medium text-primary hover:underline flex items-center gap-1">
-            Всі товари <ArrowRight className="h-4 w-4" />
-          </Link>
-        </div>
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-          {featured.map(p => (
-            <ProductCard key={p.id} product={p} />
-          ))}
-        </div>
-      </section>
+      {featured.length > 0 && (
+        <section className="container mx-auto px-4 pb-20">
+          <div className="flex items-center justify-between mb-10">
+            <h2 className="heading-section">Популярні товари</h2>
+            <Link to="/catalog" className="text-sm font-medium text-primary hover:underline flex items-center gap-1">
+              Всі товари <ArrowRight className="h-4 w-4" />
+            </Link>
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+            {featured.map(p => (
+              <ProductCard key={p.id} product={p} />
+            ))}
+          </div>
+        </section>
+      )}
     </div>
   );
 }
