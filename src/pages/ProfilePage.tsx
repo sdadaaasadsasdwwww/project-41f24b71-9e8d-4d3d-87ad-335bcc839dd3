@@ -1,7 +1,10 @@
-import { User, LogOut, Settings } from 'lucide-react';
+import { User, LogOut, Settings, Package } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import { useStore } from '@/contexts/StoreContext';
 
 export default function ProfilePage() {
+  const { orders } = useStore();
+
   return (
     <div className="container mx-auto px-4 py-10">
       <h1 className="heading-display mb-8">Особистий кабінет</h1>
@@ -33,7 +36,25 @@ export default function ProfilePage() {
 
         <div className="lg:col-span-2">
           <h2 className="heading-section mb-6">Історія замовлень</h2>
-          <p className="text-muted-foreground">Поки немає замовлень</p>
+          {orders.length === 0 ? (
+            <p className="text-muted-foreground">Поки немає замовлень</p>
+          ) : (
+            <div className="space-y-4">
+              {orders.map(order => (
+                <div key={order.id} className="bg-card border border-border/50 rounded-xl p-5 flex items-center justify-between">
+                  <div>
+                    <div className="flex items-center gap-3 mb-1">
+                      <Package className="h-4 w-4 text-muted-foreground" />
+                      <span className="font-semibold text-sm">Замовлення #{order.id.slice(0, 8)}</span>
+                      <span className="text-xs px-2 py-0.5 rounded-full bg-accent text-accent-foreground">{order.status}</span>
+                    </div>
+                    <p className="text-xs text-muted-foreground">{order.date} · {order.items.length} товарів</p>
+                  </div>
+                  <span className="font-bold">{order.total} ₴</span>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
       </div>
     </div>
