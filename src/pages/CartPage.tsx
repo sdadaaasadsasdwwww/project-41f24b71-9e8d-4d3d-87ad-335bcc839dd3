@@ -1,11 +1,11 @@
 import { Link } from 'react-router-dom';
-import { Minus, Plus, Trash2, ArrowLeft, ShoppingBag } from 'lucide-react';
+import { Minus, Plus, ArrowLeft, ShoppingBag } from 'lucide-react';
 import { useCart } from '@/contexts/CartContext';
 import { useState } from 'react';
 import { toast } from 'sonner';
 
 export default function CartPage() {
-  const { items, updateQuantity, removeFromCart, clearCart, totalPrice } = useCart();
+  const { items, updateQuantity, clearCart, totalPrice } = useCart();
   const [showCheckout, setShowCheckout] = useState(false);
 
   if (items.length === 0) {
@@ -52,9 +52,6 @@ export default function CartPage() {
                     <span className="px-3 text-sm">{quantity}</span>
                     <button onClick={() => updateQuantity(product.id, quantity + 1)} className="p-1.5 hover:bg-accent"><Plus className="h-3 w-3" /></button>
                   </div>
-                  <button onClick={() => removeFromCart(product.id)} className="p-1.5 text-muted-foreground hover:text-destructive">
-                    <Trash2 className="h-4 w-4" />
-                  </button>
                 </div>
               </div>
               <p className="font-bold text-foreground whitespace-nowrap">{product.price * quantity} ₴</p>
@@ -76,10 +73,7 @@ export default function CartPage() {
           </div>
 
           {!showCheckout ? (
-            <button
-              onClick={() => setShowCheckout(true)}
-              className="w-full bg-primary text-primary-foreground py-3 rounded-lg font-medium hover:bg-primary/90 transition-colors"
-            >
+            <button onClick={() => setShowCheckout(true)} className="w-full bg-primary text-primary-foreground py-3 rounded-lg font-medium hover:bg-primary/90 transition-colors">
               Оформити замовлення
             </button>
           ) : (
