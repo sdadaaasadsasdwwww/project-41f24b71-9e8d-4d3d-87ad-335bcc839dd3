@@ -1,14 +1,16 @@
 import { Link, useLocation } from 'react-router-dom';
-import { ShoppingBag, Heart, User, Menu, X, Flower2 } from 'lucide-react';
+import { ShoppingBag, Heart, User, Menu, X, Flower2, LogIn } from 'lucide-react';
 import { useCart } from '@/contexts/CartContext';
 import { useFavorites } from '@/contexts/FavoritesContext';
 import { useStore } from '@/contexts/StoreContext';
+import { useAuth } from '@/contexts/AuthContext';
 import { useState } from 'react';
 
 export default function Header() {
   const { totalItems } = useCart();
   const { favorites } = useFavorites();
   const { settings } = useStore();
+  const { user } = useAuth();
   const [menuOpen, setMenuOpen] = useState(false);
   const location = useLocation();
 
@@ -57,9 +59,15 @@ export default function Header() {
               </span>
             )}
           </Link>
-          <Link to="/profile" className="p-2 rounded-full hover:bg-accent transition-colors">
-            <User className="h-5 w-5 text-foreground" />
-          </Link>
+          {user ? (
+            <Link to="/profile" className="p-2 rounded-full hover:bg-accent transition-colors">
+              <User className="h-5 w-5 text-foreground" />
+            </Link>
+          ) : (
+            <Link to="/auth" className="p-2 rounded-full hover:bg-accent transition-colors">
+              <LogIn className="h-5 w-5 text-foreground" />
+            </Link>
+          )}
           <button className="md:hidden p-2" onClick={() => setMenuOpen(!menuOpen)}>
             {menuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
           </button>
@@ -78,6 +86,11 @@ export default function Header() {
               {l.label}
             </Link>
           ))}
+          {!user && (
+            <Link to="/auth" onClick={() => setMenuOpen(false)} className="block text-sm font-medium text-primary">
+              Увійти
+            </Link>
+          )}
         </div>
       )}
     </header>
