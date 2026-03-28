@@ -46,7 +46,9 @@ interface StoreContextType {
   addProduct: (product: Product) => void;
   deleteProduct: (id: string) => void;
   categories: Category[];
-  updateCategory: (id: string, name: string) => void;
+  addCategory: (category: Category) => void;
+  updateCategory: (id: string, updates: Partial<Omit<Category, 'id'>>) => void;
+  deleteCategory: (id: string) => void;
   orders: Order[];
   addOrder: (order: Order) => void;
   updateOrderStatus: (id: string, status: string) => void;
@@ -94,8 +96,16 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     setProducts(prev => { const n = prev.filter(p => p.id !== id); save('store_products', n); return n; });
   }, []);
 
-  const updateCategory = useCallback((id: string, name: string) => {
-    setCats(prev => { const n = prev.map(c => c.id === id ? { ...c, name } : c); save('store_categories', n); return n; });
+  const addCategory = useCallback((cat: Category) => {
+    setCats(prev => { const n = [...prev, cat]; save('store_categories', n); return n; });
+  }, []);
+
+  const updateCategory = useCallback((id: string, updates: Partial<Omit<Category, 'id'>>) => {
+    setCats(prev => { const n = prev.map(c => c.id === id ? { ...c, ...updates } : c); save('store_categories', n); return n; });
+  }, []);
+
+  const deleteCategory = useCallback((id: string) => {
+    setCats(prev => { const n = prev.filter(c => c.id !== id); save('store_categories', n); return n; });
   }, []);
 
   const addOrder = useCallback((o: Order) => {
@@ -124,7 +134,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   return (
-    <StoreContext.Provider value={{ products, addProduct, deleteProduct, categories: cats, updateCategory, orders, addOrder, updateOrderStatus, chats, addChat, addMessageToChat, settings, updateSettings }}>
+    <StoreContext.Provider value={{ products, addProduct, deleteProduct, categories: cats, addCategory, updateCategory, deleteCategory, orders, addOrder, updateOrderStatus, chats, addChat, addMessageToChat, settings, updateSettings }}>
       {children}
     </StoreContext.Provider>
   );
