@@ -231,41 +231,78 @@ function ProductsTab() {
 }
 
 function CategoriesTab() {
-  const { categories, updateCategory } = useStore();
+  const { categories, addCategory, updateCategory, deleteCategory } = useStore();
   const [editingId, setEditingId] = useState<string | null>(null);
-  const [editValue, setEditValue] = useState('');
+  const [editName, setEditName] = useState('');
+  const [editIcon, setEditIcon] = useState('');
+  const [showAdd, setShowAdd] = useState(false);
+  const [newName, setNewName] = useState('');
+  const [newIcon, setNewIcon] = useState('🌸');
 
-  const startEdit = (id: string, name: string) => {
+  const startEdit = (id: string, name: string, icon: string) => {
     setEditingId(id);
-    setEditValue(name);
+    setEditName(name);
+    setEditIcon(icon);
   };
 
   const saveEdit = () => {
-    if (editingId && editValue.trim()) {
-      updateCategory(editingId, editValue.trim());
+    if (editingId && editName.trim()) {
+      updateCategory(editingId, { name: editName.trim(), icon: editIcon });
       toast.success('Категорію оновлено');
     }
     setEditingId(null);
   };
 
+  const handleAdd = () => {
+    if (!newName.trim()) { toast.error('Введіть назву'); return; }
+    addCategory({ id: newName.trim().toLowerCase().replace(/\s+/g, '-') + '-' + Date.now(), name: newName.trim(), icon: newIcon });
+    toast.success('Категорію додано');
+    setNewName(''); setNewIcon('🌸'); setShowAdd(false);
+  };
+
   return (
     <div>
-      <h2 className="heading-section mb-4">Категорії</h2>
+      <div className="flex items-center justify-between mb-4">
+        <h2 className="heading-section">Категорії ({categories.length})</h2>
+        <button onClick={() => setShowAdd(!showAdd)} className="inline-flex items-center gap-2 bg-primary text-primary-foreground px-4 py-2 rounded-lg text-sm font-medium hover:bg-primary/90 transition-colors">
+          <Plus className="h-4 w-4" /> Додати категорію
+        </button>
+      </div>
+
+      {showAdd && (
+        <div className="mb-4 p-4 border border-border/50 rounded-lg bg-background flex flex-wrap items-end gap-3">
+          <div>
+            <label className="text-xs font-medium block mb-1">Іконка (емодзі)</label>
+            <input value={newIcon} onChange={e => setNewIcon(e.target.value)} className="w-16 border border-border rounded-lg px-3 py-2 text-sm bg-card text-center" />
+          </div>
+          <div className="flex-1 min-w-[150px]">
+            <label className="text-xs font-medium block mb-1">Назва</label>
+            <input value={newName} onChange={e => setNewName(e.target.value)} onKeyDown={e => e.key === 'Enter' && handleAdd()} className="w-full border border-border rounded-lg px-3 py-2 text-sm bg-card" placeholder="Назва категорії" />
+          </div>
+          <button onClick={handleAdd} className="bg-primary text-primary-foreground px-4 py-2 rounded-lg text-sm font-medium hover:bg-primary/90 transition-colors">Додати</button>
+          <button onClick={() => setShowAdd(false)} className="px-4 py-2 border border-border rounded-lg text-sm hover:bg-accent transition-colors">Скасувати</button>
+        </div>
+      )}
+
       <div className="space-y-2">
         {categories.map(c => (
           <div key={c.id} className="flex items-center gap-3 p-3 border border-border/50 rounded-lg">
-            <span className="text-xl">{c.icon}</span>
             {editingId === c.id ? (
               <>
-                <input value={editValue} onChange={e => setEditValue(e.target.value)} className="flex-1 border border-border rounded-lg px-3 py-1.5 text-sm bg-background" autoFocus onKeyDown={e => e.key === 'Enter' && saveEdit()} />
+                <input value={editIcon} onChange={e => setEditIcon(e.target.value)} className="w-12 border border-border rounded-lg px-2 py-1.5 text-sm bg-background text-center" />
+                <input value={editName} onChange={e => setEditName(e.target.value)} className="flex-1 border border-border rounded-lg px-3 py-1.5 text-sm bg-background" autoFocus onKeyDown={e => e.key === 'Enter' && saveEdit()} />
                 <button onClick={saveEdit} className="p-1.5 text-secondary hover:bg-accent rounded"><Check className="h-4 w-4" /></button>
                 <button onClick={() => setEditingId(null)} className="p-1.5 text-muted-foreground hover:bg-accent rounded"><X className="h-4 w-4" /></button>
               </>
             ) : (
               <>
+                <span className="text-xl">{c.icon}</span>
                 <span className="flex-1 text-sm font-medium">{c.name}</span>
-                <button onClick={() => startEdit(c.id, c.name)} className="p-1.5 text-muted-foreground hover:text-primary hover:bg-accent rounded transition-colors">
+                <button onClick={() => startEdit(c.id, c.name, c.icon)} className="p-1.5 text-muted-foreground hover:text-primary hover:bg-accent rounded transition-colors">
                   <Pencil className="h-4 w-4" />
+                </button>
+                <button onClick={() => { deleteCategory(c.id); toast('Категорію видалено'); }} className="p-1.5 text-muted-foreground hover:text-destructive hover:bg-accent rounded transition-colors">
+                  <Trash2 className="h-4 w-4" />
                 </button>
               </>
             )}
