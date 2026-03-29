@@ -1,7 +1,9 @@
-import { useState } from 'react';
-import { Settings, MessageSquare, Package, BarChart3, ShoppingBag, ArrowLeft, Plus, Trash2, Pencil, Check, X, Send, Users, Image } from 'lucide-react';
-import { Link } from 'react-router-dom';
+import { useState, useEffect } from 'react';
+import { Settings, MessageSquare, Package, BarChart3, ShoppingBag, ArrowLeft, Plus, Trash2, Pencil, Check, X, Send, Users, Image, Shield, UserPlus, UserMinus } from 'lucide-react';
+import { Link, Navigate } from 'react-router-dom';
 import { useStore } from '@/contexts/StoreContext';
+import { useAuth } from '@/contexts/AuthContext';
+import { supabase } from '@/integrations/supabase/client';
 import type { Product } from '@/data/products';
 import { toast } from 'sonner';
 
@@ -10,12 +12,25 @@ const tabs = [
   { id: 'products', label: 'Товари', icon: ShoppingBag },
   { id: 'categories', label: 'Категорії', icon: BarChart3 },
   { id: 'chats', label: 'Чати', icon: MessageSquare },
+  { id: 'admins', label: 'Адміністратори', icon: Shield },
   { id: 'settings', label: 'Налаштування', icon: Settings },
 ];
 
 export default function AdminPage() {
   const [activeTab, setActiveTab] = useState('orders');
   const store = useStore();
+  const { user, loading, isAdmin } = useAuth();
+
+  if (loading) return <div className="flex items-center justify-center min-h-[60vh]"><p className="text-muted-foreground">Завантаження...</p></div>;
+  if (!user) return <Navigate to="/auth" replace />;
+  if (!isAdmin) return (
+    <div className="container mx-auto px-4 py-20 text-center">
+      <Shield className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+      <h1 className="heading-display text-2xl mb-2">Доступ заборонено</h1>
+      <p className="text-muted-foreground">У вас немає прав адміністратора.</p>
+      <Link to="/" className="inline-block mt-4 text-primary hover:underline">На головну</Link>
+    </div>
+  );
 
   return (
     <div className="container mx-auto px-4 py-10">
@@ -44,6 +59,7 @@ export default function AdminPage() {
           {activeTab === 'products' && <ProductsTab />}
           {activeTab === 'categories' && <CategoriesTab />}
           {activeTab === 'chats' && <ChatsTab />}
+          {activeTab === 'admins' && <AdminsTab />}
           {activeTab === 'settings' && <SettingsTab />}
         </div>
       </div>
