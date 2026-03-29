@@ -1,4 +1,4 @@
-import { User, LogOut, Settings, Package } from 'lucide-react';
+import { User, LogOut, Settings, Package, Shield } from 'lucide-react';
 import { Link, Navigate } from 'react-router-dom';
 import { useStore } from '@/contexts/StoreContext';
 import { useAuth } from '@/contexts/AuthContext';
@@ -6,7 +6,7 @@ import { toast } from 'sonner';
 
 export default function ProfilePage() {
   const { orders } = useStore();
-  const { user, profile, loading, signOut } = useAuth();
+  const { user, profile, loading, signOut, isAdmin } = useAuth();
 
   if (loading) return <div className="flex items-center justify-center min-h-[60vh]"><p className="text-muted-foreground">Завантаження...</p></div>;
   if (!user) return <Navigate to="/auth" replace />;
@@ -33,9 +33,11 @@ export default function ProfilePage() {
           </div>
 
           <div className="space-y-2">
-            <Link to="/admin" className="w-full text-left px-4 py-3 rounded-lg hover:bg-accent transition-colors flex items-center gap-3 text-sm block">
-              <Settings className="h-4 w-4" /> Адмін-панель
-            </Link>
+            {isAdmin && (
+              <Link to="/admin" className="w-full text-left px-4 py-3 rounded-lg hover:bg-accent transition-colors flex items-center gap-3 text-sm block">
+                <Shield className="h-4 w-4 text-primary" /> Адмін-панель
+              </Link>
+            )}
             <button onClick={handleSignOut} className="w-full text-left px-4 py-3 rounded-lg hover:bg-accent transition-colors flex items-center gap-3 text-sm text-destructive">
               <LogOut className="h-4 w-4" /> Вийти
             </button>
