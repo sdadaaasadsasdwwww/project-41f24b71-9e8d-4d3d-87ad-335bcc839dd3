@@ -1,7 +1,9 @@
-import { useState } from 'react';
-import { Settings, MessageSquare, Package, BarChart3, ShoppingBag, ArrowLeft, Plus, Trash2, Pencil, Check, X, Send, Users, Image } from 'lucide-react';
-import { Link } from 'react-router-dom';
+import { useState, useEffect } from 'react';
+import { Settings, MessageSquare, Package, BarChart3, ShoppingBag, ArrowLeft, Plus, Trash2, Pencil, Check, X, Send, Users, Image, Shield, UserPlus, UserMinus } from 'lucide-react';
+import { Link, Navigate } from 'react-router-dom';
 import { useStore } from '@/contexts/StoreContext';
+import { useAuth } from '@/contexts/AuthContext';
+import { supabase } from '@/integrations/supabase/client';
 import type { Product } from '@/data/products';
 import { toast } from 'sonner';
 
@@ -10,12 +12,25 @@ const tabs = [
   { id: 'products', label: 'Товари', icon: ShoppingBag },
   { id: 'categories', label: 'Категорії', icon: BarChart3 },
   { id: 'chats', label: 'Чати', icon: MessageSquare },
+  { id: 'admins', label: 'Адміністратори', icon: Shield },
   { id: 'settings', label: 'Налаштування', icon: Settings },
 ];
 
 export default function AdminPage() {
   const [activeTab, setActiveTab] = useState('orders');
   const store = useStore();
+  const { user, loading, isAdmin } = useAuth();
+
+  if (loading) return <div className="flex items-center justify-center min-h-[60vh]"><p className="text-muted-foreground">Завантаження...</p></div>;
+  if (!user) return <Navigate to="/auth" replace />;
+  if (!isAdmin) return (
+    <div className="container mx-auto px-4 py-20 text-center">
+      <Shield className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+      <h1 className="heading-display text-2xl mb-2">Доступ заборонено</h1>
+      <p className="text-muted-foreground">У вас немає прав адміністратора.</p>
+      <Link to="/" className="inline-block mt-4 text-primary hover:underline">На головну</Link>
+    </div>
+  );
 
   return (
     <div className="container mx-auto px-4 py-10">
@@ -44,6 +59,7 @@ export default function AdminPage() {
           {activeTab === 'products' && <ProductsTab />}
           {activeTab === 'categories' && <CategoriesTab />}
           {activeTab === 'chats' && <ChatsTab />}
+          {activeTab === 'admins' && <AdminsTab />}
           {activeTab === 'settings' && <SettingsTab />}
         </div>
       </div>
@@ -389,6 +405,110 @@ function ChatsTab() {
               <p className="text-muted-foreground text-sm text-center py-10">Оберіть чат зліва</p>
             )}
           </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+interface AdminInfo {
+  user_id: string;
+  display_name: string;
+  email: string;
+}
+
+function AdminsTab() {
+  const [admins, setAdmins] = useState<AdminInfo[]>([]);
+  const [loadingAdmins, setLoadingAdmins] = useState(true);
+  const [email, setEmail] = useState('');
+  const [submitting, setSubmitting] = useState(false);
+  const { session } = useAuth();
+
+  const fetchAdmins = async () => {
+    setLoadingAdmins(true);
+    const { data } = await supabase.functions.invoke('admin-manage-roles', {
+      body: { action: 'list_admins' },
+    });
+    setAdmins(data?.admins || []);
+    setLoadingAdmins(false);
+  };
+
+  useEffect(() => { fetchAdmins(); }, []);
+
+  const grantAdmin = async () => {
+    if (!email.trim()) { toast.error('Введіть email'); return; }
+    setSubmitting(true);
+    const { data, error } = await supabase.functions.invoke('admin-manage-roles', {
+      body: { action: 'grant_admin', email: email.trim() },
+    });
+    if (error || data?.error) {
+      toast.error(data?.error || 'Помилка');
+    } else {
+      toast.success('Адмін-права надано!');
+      setEmail('');
+      fetchAdmins();
+    }
+    setSubmitting(false);
+  };
+
+  const revokeAdmin = async (userId: string) => {
+    const { data, error } = await supabase.functions.invoke('admin-manage-roles', {
+      body: { action: 'revoke_admin', user_id: userId },
+    });
+    if (error || data?.error) {
+      toast.error(data?.error || 'Помилка');
+    } else {
+      toast.success('Адмін-права знято');
+      fetchAdmins();
+    }
+  };
+
+  return (
+    <div>
+      <h2 className="heading-section mb-4">Адміністратори</h2>
+
+      <div className="mb-6 p-4 border border-border/50 rounded-lg bg-background">
+        <h3 className="text-sm font-medium mb-2 flex items-center gap-2"><UserPlus className="h-4 w-4" /> Додати адміністратора</h3>
+        <div className="flex gap-2">
+          <input
+            value={email}
+            onChange={e => setEmail(e.target.value)}
+            onKeyDown={e => e.key === 'Enter' && grantAdmin()}
+            placeholder="Email користувача"
+            className="flex-1 border border-border rounded-lg px-3 py-2 text-sm bg-card"
+          />
+          <button onClick={grantAdmin} disabled={submitting}
+            className="bg-primary text-primary-foreground px-4 py-2 rounded-lg text-sm font-medium hover:bg-primary/90 transition-colors disabled:opacity-50">
+            {submitting ? '...' : 'Додати'}
+          </button>
+        </div>
+        <p className="text-xs text-muted-foreground mt-2">Користувач повинен бути зареєстрований на сайті</p>
+      </div>
+
+      {loadingAdmins ? (
+        <p className="text-muted-foreground">Завантаження...</p>
+      ) : admins.length === 0 ? (
+        <p className="text-muted-foreground">Немає адміністраторів</p>
+      ) : (
+        <div className="space-y-2">
+          {admins.map(a => (
+            <div key={a.user_id} className="flex items-center gap-3 p-3 border border-border/50 rounded-lg">
+              <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center">
+                <Shield className="h-4 w-4 text-primary" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-medium">{a.display_name}</p>
+                <p className="text-xs text-muted-foreground">{a.email}</p>
+              </div>
+              <button
+                onClick={() => revokeAdmin(a.user_id)}
+                className="p-2 text-muted-foreground hover:text-destructive transition-colors"
+                title="Зняти адмін-права"
+              >
+                <UserMinus className="h-4 w-4" />
+              </button>
+            </div>
+          ))}
         </div>
       )}
     </div>
