@@ -37,7 +37,7 @@ export default function Footer() {
         </div>
       </div>
       <div className="border-t border-background/10 py-4 text-center text-xs text-background/40">
-        © 2024 {settings.shopName}. Всі права захищені.
+        © 2026 {settings.shopName}. Всі права захищені.
       </div>
     </footer>
   );
