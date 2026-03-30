@@ -5,7 +5,7 @@ import ProductCard from '@/components/ProductCard';
 import { useStore } from '@/contexts/StoreContext';
 
 const features = [
-  { icon: Heart, title: 'Створено з любов\'ю', desc: 'Кожен букет — унікальний витвір мистецтва' },
+  { icon: Heart, title: 'Ручна робота', desc: 'Кожну композицію збирають наші флористи вручну' },
   { icon: Gift, title: 'Ідеальний подарунок', desc: 'Для будь-якої нагоди та настрою' },
   { icon: Sparkles, title: 'Завжди свіжі', desc: 'Працюємо лише з найкращими квітами' },
 ];

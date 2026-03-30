@@ -1,15 +1,45 @@
-import { User, LogOut, Settings, Package, Shield } from 'lucide-react';
+import { useState } from 'react';
+import { User, LogOut, Package, Shield, Pencil, Save, X } from 'lucide-react';
 import { Link, Navigate } from 'react-router-dom';
 import { useStore } from '@/contexts/StoreContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
+import { Input } from '@/components/ui/input';
+import { Button } from '@/components/ui/button';
 
 export default function ProfilePage() {
   const { orders } = useStore();
-  const { user, profile, loading, signOut, isAdmin } = useAuth();
+  const { user, profile, loading, signOut, isAdmin, updateProfile } = useAuth();
+  const [editing, setEditing] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [form, setForm] = useState({ display_name: '', phone: '' });
 
   if (loading) return <div className="flex items-center justify-center min-h-[60vh]"><p className="text-muted-foreground">Завантаження...</p></div>;
   if (!user) return <Navigate to="/auth" replace />;
+
+  const startEdit = () => {
+    setForm({
+      display_name: profile?.display_name || '',
+      phone: profile?.phone || '',
+    });
+    setEditing(true);
+  };
+
+  const handleSave = async () => {
+    setSaving(true);
+    try {
+      await updateProfile({
+        display_name: form.display_name || null,
+        phone: form.phone || null,
+      });
+      toast.success('Профіль оновлено');
+      setEditing(false);
+    } catch {
+      toast.error('Помилка збереження');
+    } finally {
+      setSaving(false);
+    }
+  };
 
   const handleSignOut = async () => {
     await signOut();
@@ -26,11 +56,44 @@ export default function ProfilePage() {
             <div className="w-16 h-16 rounded-full bg-accent flex items-center justify-center">
               <User className="h-8 w-8 text-accent-foreground" />
             </div>
-            <div>
-              <h3 className="heading-card">{profile?.display_name || 'Користувач'}</h3>
-              <p className="text-sm text-muted-foreground">{user.email}</p>
+            <div className="flex-1 min-w-0">
+              {editing ? (
+                <div className="space-y-2">
+                  <Input
+                    placeholder="Ім'я"
+                    value={form.display_name}
+                    onChange={e => setForm(f => ({ ...f, display_name: e.target.value }))}
+                  />
+                  <Input
+                    placeholder="Телефон"
+                    value={form.phone}
+                    onChange={e => setForm(f => ({ ...f, phone: e.target.value }))}
+                  />
+                </div>
+              ) : (
+                <>
+                  <h3 className="heading-card">{profile?.display_name || 'Користувач'}</h3>
+                  <p className="text-sm text-muted-foreground">{user.email}</p>
+                  {profile?.phone && <p className="text-sm text-muted-foreground">{profile.phone}</p>}
+                </>
+              )}
             </div>
           </div>
+
+          {editing ? (
+            <div className="flex gap-2 mb-4">
+              <Button size="sm" onClick={handleSave} disabled={saving}>
+                <Save className="h-4 w-4 mr-1" /> Зберегти
+              </Button>
+              <Button size="sm" variant="outline" onClick={() => setEditing(false)}>
+                <X className="h-4 w-4 mr-1" /> Скасувати
+              </Button>
+            </div>
+          ) : (
+            <button onClick={startEdit} className="w-full text-left px-4 py-3 rounded-lg hover:bg-accent transition-colors flex items-center gap-3 text-sm mb-2">
+              <Pencil className="h-4 w-4 text-primary" /> Редагувати профіль
+            </button>
+          )}
 
           <div className="space-y-2">
             {isAdmin && (
